@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { AssetView } from '@/components/asset-view';
 import { HistoryProvider } from '@/components/history-provider';
 import { CommentWidget } from '@/components/inspector/comment-widget';
+import { CommentOverlay } from '@/components/inspector/comment-overlay'; // [kolab]
 import { InspectOverlay } from '@/components/inspector/inspect-overlay';
 import { InspectorPanel } from '@/components/inspector/inspector-panel';
 import {
@@ -689,6 +690,7 @@ export function Slide() {
                     <InspectOverlay />
                     <SaveBar />
                     {import.meta.env.DEV && <CommentWidget />}
+                    {import.meta.env.DEV && <CommentOverlay />} {/* [kolab] anchored stickers */}
                   </main>
                   {/* Mobile-only horizontal rail. Sits below the canvas and
                     pads its bottom for the iOS home indicator / Safari URL bar. */}

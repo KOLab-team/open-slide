@@ -78,7 +78,7 @@ For each change: what, where, why, and which existing upstream files it touches
 
 | # | Change | New files | Upstream files touched | Notes |
 |---|--------|-----------|------------------------|-------|
-| — | _(none yet — fork just created)_ | | | |
+| 1 | Anchored comment stickers (PowerPoint-style) | `app/components/inspector/comment-overlay.tsx` | `app/routes/slide.tsx` (+1 import, +1 line next to `CommentWidget`) | Resolves a comment's source `line` → element via `data-slide-loc`; anchors an expandable pin using the same `getBoundingClientRect` technique as `inspect-overlay.tsx`'s `Frame`. Corner `CommentWidget` left intact. |
 
 Planned (see the orchestrator session notes / project memory):
 - **#1 Anchored comment stickers** — overlay expandable comment pins on the slide
