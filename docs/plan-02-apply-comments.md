@@ -40,9 +40,16 @@ routes through the orchestrator → an Iris job.
    **There is no remote-apply / patch-return path in scope** — if the dev server
    isn't co-located with an Iris that can reach the deck files, apply is
    unavailable. (Local laptop dev: no apply unless you run a co-located Iris.)
-2. **Operator-gated.** Apply (and any source-mutating route) is reachable only by
-   an authenticated operator, enforced **server-side** (below). Clients get a
-   review surface that cannot apply or write source.
+2. **The dev inspector is operator-only — gated at the perimeter.** The open-slide
+   **dev server and ALL its existing source-mutating routes** (`/__comments/add`,
+   comment delete, the text/style editor, slide reorder/duplicate, asset writes,
+   …) are protected today only by `validateMutationRequest` (CSRF/origin checks,
+   **not identity**). We do **not** retrofit operator auth onto each route.
+   Instead the **entire dev server is operator-only and never exposed to external
+   clients** — operator access is enforced at the perimeter (your network/auth in
+   front of the dev server). Clients never touch the dev inspector; they get a
+   **separate review-only surface** (#2b). The new apply route *additionally*
+   checks an operator credential as defense-in-depth.
 
 ## Data flow
 
@@ -87,6 +94,8 @@ open-slide's comment system was built for a **single author** leaving themselves
 notes in the source. For untrusted reviewers we cannot reuse `/__comments/add`
 (it writes source). So the client-facing path is:
 
+The eventual (#2b) client-facing path:
+
 ```
 client review UI → POST review comment → REVIEW STORE (DB/JSON, not source)
 operator opens inspector → sees review-store comments as stickers (#1 reads both
@@ -94,9 +103,15 @@ operator opens inspector → sees review-store comments as stickers (#1 reads bo
   source markers (or feeds the notes straight to the Iris job) → Iris applies
 ```
 
-This makes the **client-facing review surface a larger build** than apply itself
-and is partially out of scope for #2 (see Phasing). #2 delivers operator-side
-apply; the client review store is a follow-on (#2b).
+This makes the client-facing review surface a larger build than apply itself,
+and is **out of scope for #2** (see Phasing).
+
+**#2 first cut (explicit):** Iris applies **only the existing `@slide-comment`
+markers created via the operator-side inspector** (the current `/__comments/add`).
+There is no client review store and no review-store ingestion in #2 — that
+(clients leaving comments that get materialized into markers) is **#2b**. So in
+#2, the operator both leaves the comments (in the operator-only dev inspector)
+and clicks Apply; Iris just processes the source markers already present.
 
 ---
 
@@ -121,6 +136,10 @@ Each commit: `pnpm check` clean + a changeset (packages/core changes).
   - Operator-authed; **proxies** to the orchestrator status endpoint with the
     service secret held server-side; returns `{ status, error? }`. The browser
     never talks to the orchestrator directly.
+- `GET /__operator/status` → `{ enabled, operator, reason? }` (server-side auth
+  checked): the single source of truth A3 uses to decide whether to render the
+  Apply button. Cosmetic gate only — real enforcement is the perimeter + the
+  write routes.
 
 ### A2. Config plumbing + env  *(type + routing context)*
 - **Type (edit):** add `applyComments?: { endpoint: string; workspaceId?: string }`
@@ -138,8 +157,8 @@ Each commit: `pnpm check` clean + a changeset (packages/core changes).
 
 ### A3. UI — Apply button + async status  *(new component, 1-line mount)*
 - **File (new):** `app/components/inspector/apply-comments-button.tsx`.
-- Rendered only when a server check reports operator mode (cosmetic gate; real
-  enforcement is A1).
+- Rendered only when `GET /__operator/status` reports `{ enabled: true,
+  operator: true }` (cosmetic gate; real enforcement is A1 + the perimeter).
 - States: idle → "Applying… (Iris is working)" → done (markers clear via HMR) /
   error. Polls `GET /__comments/apply/:requestId`.
 - Mount beside `CommentWidget`/`CommentOverlay` in `app/routes/slide.tsx`
@@ -205,6 +224,9 @@ Additive only: new controller + new Iris job. No change to existing routes.
 ## Non-goals (for #2)
 
 - No remote-apply / patch-return — co-location is required.
-- No client-triggered apply; no public exposure of source-writing routes.
-- No client review store in the first cut (that's #2b).
+- No client-triggered apply; the **dev inspector is operator-only and not exposed
+  to clients** (perimeter-gated). We do **not** retrofit operator auth onto each
+  existing write route.
+- No client review store / review-store ingestion in #2 (that's #2b). #2 applies
+  only operator-created `@slide-comment` source markers.
 - No drag/resize or in-place editing (those are #3 / #4).
