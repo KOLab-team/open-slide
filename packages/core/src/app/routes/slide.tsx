@@ -19,8 +19,8 @@ import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { AssetView } from '@/components/asset-view';
 import { HistoryProvider } from '@/components/history-provider';
-import { CommentWidget } from '@/components/inspector/comment-widget';
 import { CommentOverlay } from '@/components/inspector/comment-overlay'; // [kolab]
+import { CommentWidget } from '@/components/inspector/comment-widget';
 import { InspectOverlay } from '@/components/inspector/inspect-overlay';
 import { InspectorPanel } from '@/components/inspector/inspector-panel';
 import {
